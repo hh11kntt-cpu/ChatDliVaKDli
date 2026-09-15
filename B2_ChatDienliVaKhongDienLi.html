@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mô phỏng tính dẫn điện - GV Nguyễn Mạnh Hưng</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        
+        .bulb {
+            transition: fill 0.3s ease, filter 0.3s ease;
+        }
+        .bulb.on {
+            fill: #fbbf24; /* Amber-400 */
+            filter: drop-shadow(0 0 10px #fbbf24) drop-shadow(0 0 20px #fbbf24);
+        }
+        .bulb.off {
+            fill: #e5e7eb; /* Gray-200 */
+        }
+        
+        @keyframes float {
+            0% { transform: translateY(0px) translateX(0px); opacity: 0.8; }
+            33% { transform: translateY(-10px) translateX(5px); opacity: 1; }
+            66% { transform: translateY(5px) translateX(-5px); opacity: 0.9; }
+            100% { transform: translateY(0px) translateX(0px); opacity: 0.8; }
+        }
+        
+        .particle-cation { fill: #ef4444; animation: float 4s infinite ease-in-out; }
+        .particle-anion { fill: #3b82f6; animation: float 3s infinite ease-in-out alternate; }
+        .particle-molecule { fill: #10b981; animation: float 5s infinite ease-in-out; } /* Green for neutral molecules */
+        
+        .switch-lever-svg {
+            transition: transform 0.3s ease;
+            transform-origin: 100px 20px; /* Pivot point is the left node */
+        }
+        .switch.on .switch-lever-svg {
+            transform: rotate(0deg); /* Closed */
+        }
+        .switch.off .switch-lever-svg {
+            transform: rotate(-30deg); /* Open */
+        }
+
+        /* Styles for hidden answer cells in table */
+        .answer-cell {
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .answer-cell.hidden-ans {
+            background-color: #f3f4f6;
+            color: transparent;
+            position: relative;
+        }
+        .answer-cell.hidden-ans::after {
+            content: "?";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #4b5563;
+            font-weight: bold;
+            font-size: 1.25rem;
+        }
+        .answer-cell.hidden-ans:hover {
+            background-color: #e5e7eb;
+        }
+        .answer-cell.revealed-ans {
+            background-color: #dcfce3; /* light green */
+            color: #166534; /* dark green text */
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 min-h-screen p-4 md:p-8">
+
+    <header class="max-w-6xl mx-auto mb-8 text-center bg-white p-6 rounded-xl shadow-md border-t-4 border-blue-600">
+        <h1 class="text-2xl md:text-3xl font-bold text-blue-800 mb-2">Chủ đề: Sự điện li</h1>
+        <p class="text-lg font-medium text-gray-600">Thiết kế: Giáo viên Nguyễn Mạnh Hưng - Trường THPT Trại Cau</p>
+    </header>
+
+    <main class="max-w-6xl mx-auto space-y-12">
+
+        <!-- PHẦN 1: TÌM HIỂU CHẤT ĐIỆN LI VÀ KHÔNG ĐIỆN LI -->
+        <section class="bg-blue-50 p-6 md:p-8 rounded-xl shadow-md border border-blue-100">
+            <h2 class="text-xl font-bold text-blue-900 mb-4 flex items-center gap-2">
+                 <span class="bg-blue-500 text-white p-1 rounded-md">
+                    1
+                </span>
+                Tìm hiểu về chất điện li và chất không điện li
+            </h2>
+            <p class="mb-6 text-gray-700">Kết quả thử tính dẫn điện với các dung dịch hydrochloric acid (HCl), sodium hydroxide (NaOH), saccharose (C₁₂H₂₂O₁₁), ethanol (C₂H₅OH) được trình bày trong bảng dưới đây. <em>Hãy hoàn thành các thông tin còn thiếu trong bảng (Bấm vào các ô có dấu ? để xem kết quả).</em></p>
+
+            <!-- Table Container with overflow for mobile -->
+            <div class="overflow-x-auto bg-white rounded-lg shadow border border-gray-200 mb-6">
+                <table class="w-full min-w-[800px] text-center border-collapse">
+                    <thead>
+                        <tr class="bg-blue-100 text-blue-900 border-b-2 border-blue-200">
+                            <th class="p-4 border-r border-blue-200 w-1/4">Đặc điểm</th>
+                            <th class="p-4 border-r border-blue-200">Dung dịch HCl<br><span class="text-xs font-normal text-gray-600">(Acid)</span></th>
+                            <th class="p-4 border-r border-blue-200">Dung dịch NaOH<br><span class="text-xs font-normal text-gray-600">(Base)</span></th>
+                            <th class="p-4 border-r border-blue-200">Nước đường<br><span class="text-xs font-normal text-gray-600">(Saccharose)</span></th>
+                            <th class="p-4">Dung dịch ethanol<br><span class="text-xs font-normal text-gray-600">(Cồn)</span></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Row: Simulators -->
+                        <tr class="border-b border-gray-200">
+                            <td class="p-4 border-r border-gray-200 font-medium text-left">Mô phỏng Thí nghiệm<br><span class="text-xs text-gray-500 font-normal">Bấm công tắc để kiểm tra</span></td>
+                            <td class="p-4 border-r border-gray-200">
+                                <div class="w-32 h-40 mx-auto relative mb-2" id="sim-tbl-hcl"></div>
+                                <button onclick="toggleSwitch('tbl-hcl')" class="px-3 py-1 text-sm bg-blue-100 hover:bg-blue-200 text-blue-800 rounded transition-colors w-full">Đóng CT</button>
+                            </td>
+                            <td class="p-4 border-r border-gray-200">
+                                <div class="w-32 h-40 mx-auto relative mb-2" id="sim-tbl-naoh"></div>
+                                <button onclick="toggleSwitch('tbl-naoh')" class="px-3 py-1 text-sm bg-blue-100 hover:bg-blue-200 text-blue-800 rounded transition-colors w-full">Đóng CT</button>
+                            </td>
+                            <td class="p-4 border-r border-gray-200">
+                                <div class="w-32 h-40 mx-auto relative mb-2" id="sim-tbl-sugar"></div>
+                                <button onclick="toggleSwitch('tbl-sugar')" class="px-3 py-1 text-sm bg-blue-100 hover:bg-blue-200 text-blue-800 rounded transition-colors w-full">Đóng CT</button>
+                            </td>
+                            <td class="p-4">
+                                <div class="w-32 h-40 mx-auto relative mb-2" id="sim-tbl-eth"></div>
+                                <button onclick="toggleSwitch('tbl-eth')" class="px-3 py-1 text-sm bg-blue-100 hover:bg-blue-200 text-blue-800 rounded transition-colors w-full">Đóng CT</button>
+                            </td>
+                        </tr>
+                        
+                        <!-- Row: Hiện tượng (from image) -->
+                        <tr class="border-b border-gray-200 bg-gray-50">
+                            <td class="p-4 border-r border-gray-200 font-medium text-left">Hiện tượng</td>
+                            <td class="p-4 border-r border-gray-200 text-yellow-600 font-bold" id="stat-tbl-hcl">Đèn sáng</td>
+                            <td class="p-4 border-r border-gray-200 text-yellow-600 font-bold" id="stat-tbl-naoh">Đèn sáng</td>
+                            <td class="p-4 border-r border-gray-200 text-gray-500" id="stat-tbl-sugar">Đèn không sáng</td>
+                            <td class="p-4 text-gray-500" id="stat-tbl-eth">Đèn không sáng</td>
+                        </tr>
+
+                        <!-- Row 1 to fill -->
+                        <tr class="border-b border-gray-200">
+                            <td class="p-4 border-r border-gray-200 font-medium text-left">Dung dịch dẫn điện /<br>không dẫn điện</td>
+                            <td class="p-4 border-r border-gray-200 answer-cell hidden-ans" onclick="revealCell(this, 'Dẫn điện')"></td>
+                            <td class="p-4 border-r border-gray-200 answer-cell hidden-ans" onclick="revealCell(this, 'Dẫn điện')"></td>
+                            <td class="p-4 border-r border-gray-200 answer-cell hidden-ans" onclick="revealCell(this, 'Không dẫn điện')"></td>
+                            <td class="p-4 answer-cell hidden-ans" onclick="revealCell(this, 'Không dẫn điện')"></td>
+                        </tr>
+
+                        <!-- Row 2 to fill -->
+                        <tr class="border-b border-gray-200">
+                            <td class="p-4 border-r border-gray-200 font-medium text-left">Có / không có các ion trái dấu trong dung dịch</td>
+                            <td class="p-4 border-r border-gray-200 answer-cell hidden-ans" onclick="revealCell(this, 'Có (H⁺, Cl⁻)')"></td>
+                            <td class="p-4 border-r border-gray-200 answer-cell hidden-ans" onclick="revealCell(this, 'Có (Na⁺, OH⁻)')"></td>
+                            <td class="p-4 border-r border-gray-200 answer-cell hidden-ans" onclick="revealCell(this, 'Không có')"></td>
+                            <td class="p-4 answer-cell hidden-ans" onclick="revealCell(this, 'Không có')"></td>
+                        </tr>
+
+                        <!-- Row 3 to fill -->
+                        <tr class="">
+                            <td class="p-4 border-r border-gray-200 font-medium text-left">Chất điện li /<br>chất không điện li</td>
+                            <td class="p-4 border-r border-gray-200 answer-cell hidden-ans" onclick="revealCell(this, 'Chất điện li')"></td>
+                            <td class="p-4 border-r border-gray-200 answer-cell hidden-ans" onclick="revealCell(this, 'Chất điện li')"></td>
+                            <td class="p-4 border-r border-gray-200 answer-cell hidden-ans" onclick="revealCell(this, 'Chất không điện li')"></td>
+                            <td class="p-4 answer-cell hidden-ans" onclick="revealCell(this, 'Chất không điện li')"></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <p class="text-center text-sm text-gray-500 italic">Hướng dẫn: Click vào các ô trống (?) để xem đáp án điền vào bảng.</p>
+        </section>
+
+        <!-- PHẦN 2: KẾT LUẬN -->
+        <section class="bg-yellow-50 p-6 md:p-8 rounded-xl shadow-md border border-yellow-200">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-bold text-yellow-800 flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Kết luận (Ghi nhớ)
+                </h3>
+                <button onclick="toggleAnswer('conclusion-content')" class="text-sm px-4 py-2 bg-yellow-400 hover:bg-yellow-500 text-yellow-900 font-medium rounded-md transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-yellow-400">
+                    Hiển thị kết luận
+                </button>
+            </div>
+            
+            <div id="conclusion-content" class="hidden mt-4 p-5 bg-white rounded-lg border border-yellow-300 shadow-inner text-gray-800 text-md leading-relaxed">
+                <ul class="list-disc pl-5 space-y-2">
+                    <li><strong>Sự điện li</strong> là quá trình phân li các chất trong nước ra ion.</li>
+                    <li><strong>Chất điện li</strong> là chất khi tan trong nước (hoặc ở trạng thái nóng chảy) phân li ra ion. Hầu hết các <em>acid, base và muối</em> là chất điện li.</li>
+                    <li><strong>Chất không điện li</strong> là chất khi tan trong nước không phân li ra ion (dung dịch chỉ chứa các phân tử trung hòa). Ví dụ: đường, cồn...</li>
+                    <li>Dung dịch chất điện li dẫn được điện là do trong dung dịch có các hạt mang điện chuyển động tự do (cation và anion).</li>
+                </ul>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        /**
+         * Function to generate Circuit SVG
+         * type: 'water' (none), 'salt_solid' (none), 'salt_sol' (conducts), 
+         *       'hcl' (conducts), 'naoh' (conducts), 'sugar' (none), 'eth' (none)
+         */
+        function createCircuitSVG(id, type) {
+            let beakerContent = '';
+            let conducts = false;
+            let liquidColor = "#bae6fd"; // Default water blue
+            
+            if (type === 'water') {
+                beakerContent = `<rect x="30" y="80" width="140" height="90" fill="#e0f2fe" opacity="0.6"/>`; 
+            } 
+            else if (type === 'salt_solid') {
+                beakerContent = `<rect x="30" y="80" width="140" height="90" fill="#f3f4f6"/>`; 
+                for(let i=0; i<100; i++) {
+                    beakerContent += `<circle cx="${35+Math.random()*130}" cy="${85+Math.random()*80}" r="1" fill="#d1d5db"/>`;
+                }
+            } 
+            else if (type === 'salt_sol' || type === 'hcl' || type === 'naoh') {
+                conducts = true;
+                if(type==='hcl') liquidColor = "#fecaca"; // light red
+                if(type==='naoh') liquidColor = "#c7d2fe"; // light indigo
+                
+                beakerContent = `<rect x="30" y="80" width="140" height="90" fill="${liquidColor}" opacity="0.7"/>`; 
+                let ions = '';
+                
+                // Labels for ions
+                let catLabel = "+", anLabel = "-";
+                if(type === 'hcl') { catLabel = "H⁺"; anLabel = "Cl⁻"; }
+                else if (type === 'naoh') { catLabel = "Na⁺"; anLabel = "OH⁻"; }
+                
+                for(let i=0; i<12; i++) {
+                    // Cations (Redish)
+                    ions += `<g class="particle-cation hidden-until-on" style="transform-origin: ${40+Math.random()*120}px ${90+Math.random()*70}px; animation-delay: -${Math.random()*2}s;">
+                                <circle cx="${40+Math.random()*120}" cy="${90+Math.random()*70}" r="6" fill="#ef4444" />
+                                <text x="${40+Math.random()*120}" y="${90+Math.random()*70+1}" font-size="5" fill="white" text-anchor="middle" dominant-baseline="middle">${catLabel}</text>
+                             </g>`;
+                    // Anions (Blueish)
+                    ions += `<g class="particle-anion hidden-until-on" style="transform-origin: ${40+Math.random()*120}px ${90+Math.random()*70}px; animation-delay: -${Math.random()*3}s;">
+                                <circle cx="${40+Math.random()*120}" cy="${90+Math.random()*70}" r="7" fill="#3b82f6" />
+                                <text x="${40+Math.random()*120}" y="${90+Math.random()*70+1}" font-size="5" fill="white" text-anchor="middle" dominant-baseline="middle">${anLabel}</text>
+                             </g>`;
+                }
+                beakerContent += `<g id="particles-${id}" style="opacity: 0.3; transition: opacity 0.5s;">${ions}</g>`;
+            }
+            else if (type === 'sugar' || type === 'eth') {
+                if(type==='sugar') liquidColor = "#fef08a"; // light yellow
+                if(type==='eth') liquidColor = "#e5e7eb"; // clear/grayish
+                
+                beakerContent = `<rect x="30" y="80" width="140" height="90" fill="${liquidColor}" opacity="0.6"/>`; 
+                
+                // Neutral molecules
+                let molecules = '';
+                let label = type === 'sugar' ? "C₁₂H₂₂O₁₁" : "C₂H₅OH";
+                for(let i=0; i<6; i++) {
+                     let rx = 40+Math.random()*100;
+                     let ry = 90+Math.random()*60;
+                     molecules += `<g class="particle-molecule" style="transform-origin: ${rx}px ${ry}px; animation-delay: -${Math.random()*4}s;">
+                                <ellipse cx="${rx}" cy="${ry}" rx="12" ry="8" fill="#10b981" opacity="0.8"/>
+                                <text x="${rx}" y="${ry+1}" font-size="4" fill="white" text-anchor="middle" dominant-baseline="middle">${label}</text>
+                             </g>`;
+                }
+                beakerContent += `<g id="particles-${id}" style="opacity: 0.7;">${molecules}</g>`;
+            }
+
+            /*
+             * FIX WIRING: 
+             * Battery Pos (Right) -> Wire -> Node Right Switch
+             * Node Left Switch -> Wire -> Bulb Bottom
+             * Bulb Side -> Wire -> Left Electrode
+             * Battery Neg (Left) -> Wire -> Right Electrode
+             */
+            const svg = `
+            <svg viewBox="0 0 200 220" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+                
+                <!-- Wires (Fixed) -->
+                <!-- 1. Left Electrode to Bulb -->
+                <path d="M 60 70 L 60 25" stroke="#4b5563" stroke-width="2" fill="none"/> 
+                
+                <!-- 2. Bulb to Switch Left Node -->
+                <path d="M 68 20 L 100 20" stroke="#4b5563" stroke-width="2" fill="none"/> 
+                
+                <!-- 3. Switch Right Node to Battery Positive -->
+                <path d="M 130 20 L 140 20" stroke="#4b5563" stroke-width="2" fill="none"/> 
+                
+                <!-- 4. Battery Negative to Right Electrode -->
+                <path d="M 180 30 C 190 30, 200 70, 140 70" stroke="#4b5563" stroke-width="2" fill="none"/> 
+                
+                <!-- Switch -->
+                <g class="switch off" id="switch-${id}">
+                    <circle cx="100" cy="20" r="3" fill="#374151"/> <!-- Left node -->
+                    <circle cx="130" cy="20" r="3" fill="#374151"/> <!-- Right node -->
+                    <line x1="100" y1="20" x2="130" y2="20" stroke="#1f2937" stroke-width="3" stroke-linecap="round" class="switch-lever-svg" />
+                </g>
+
+                <!-- Battery (moved slightly to align wires better) -->
+                <g transform="translate(140, 10)">
+                    <rect x="0" y="0" width="40" height="40" rx="3" fill="#1f2937"/>
+                    <rect x="0" y="0" width="40" height="8" rx="0" fill="#eab308"/> 
+                    <rect x="15" y="-4" width="10" height="4" rx="1" fill="#4b5563"/> 
+                    <text x="10" y="25" fill="white" font-size="12" font-weight="bold">+</text>
+                    <text x="25" y="25" fill="white" font-size="12" font-weight="bold">-</text>
+                </g>
+
+                <!-- Lightbulb -->
+                <g transform="translate(60, 10)">
+                    <rect x="-8" y="15" width="16" height="10" fill="#9ca3af" rx="2"/> <!-- Base -->
+                    <!-- Connection points inside bulb base -->
+                    <circle cx="0" cy="25" r="2" fill="#4b5563" /> 
+                    <circle cx="8" cy="20" r="2" fill="#4b5563" /> 
+                    
+                    <circle cx="0" cy="5" r="12" class="bulb off" id="bulb-${id}"/> <!-- Glass -->
+                    <path d="M -4 15 L -2 5 L 2 5 L 4 15" stroke="#4b5563" stroke-width="1" fill="none"/> <!-- Supports -->
+                    <line x1="-2" y1="5" x2="2" y2="5" stroke="#fb923c" stroke-width="1" /> <!-- Filament -->
+                </g>
+
+                <!-- Beaker and contents -->
+                <g transform="translate(0, 40)">
+                    ${beakerContent}
+                    
+                    <!-- Electrodes -->
+                    <rect x="58" y="20" width="4" height="100" fill="#ef4444" rx="2"/> <!-- Left/Pos -->
+                    <rect x="138" y="20" width="4" height="100" fill="#1f2937" rx="2"/> <!-- Right/Neg -->
+                    
+                    <!-- Beaker Glass -->
+                    <path d="M 30 70 L 30 170 C 30 175, 35 180, 40 180 L 160 180 C 165 180, 170 175, 170 170 L 170 70" stroke="#9ca3af" stroke-width="3" fill="none"/>
+                    <ellipse cx="100" cy="70" rx="70" ry="10" stroke="#9ca3af" stroke-width="2" fill="none"/>
+                    
+                    <!-- Liquid/Solid surface line -->
+                    <ellipse cx="100" cy="80" rx="70" ry="8" stroke="${type === 'salt_solid' ? '#d1d5db' : '#93c5fd'}" stroke-width="1" fill="none"/>
+                </g>
+            </svg>
+            `;
+            
+            const container = document.getElementById(`sim-${id}`);
+            if(container) {
+                container.innerHTML = svg;
+                // Store logic info on the container element
+                container.dataset.conducts = conducts;
+            }
+        }
+
+        window.onload = () => {
+            // Init Section Table
+            createCircuitSVG('tbl-hcl', 'hcl');
+            createCircuitSVG('tbl-naoh', 'naoh');
+            createCircuitSVG('tbl-sugar', 'sugar');
+            createCircuitSVG('tbl-eth', 'eth');
+        };
+
+        const switchStates = {};
+
+        function toggleSwitch(id) {
+            switchStates[id] = !switchStates[id];
+            const isOn = switchStates[id];
+            
+            const switchGroup = document.getElementById(`switch-${id}`);
+            const bulb = document.getElementById(`bulb-${id}`);
+            const container = document.getElementById(`sim-${id}`);
+            const conducts = container.dataset.conducts === 'true';
+            
+            // Update Switch visual
+            if (isOn) {
+                switchGroup.classList.remove('off');
+                switchGroup.classList.add('on');
+            } else {
+                switchGroup.classList.remove('on');
+                switchGroup.classList.add('off');
+            }
+            
+            // Update Button texts if they exist (Section 1)
+            const btnText = document.getElementById(`btn-text-${id}`);
+            if(btnText) {
+                btnText.textContent = isOn ? "Mở công tắc" : "Đóng công tắc";
+            }
+            
+            // Handle Logic (Light up and particle opacity)
+            if (isOn && conducts) {
+                bulb.classList.remove('off');
+                bulb.classList.add('on');
+                
+                const particles = document.getElementById(`particles-${id}`);
+                if(particles) particles.style.opacity = "1";
+                
+                // Extra UI for section 1
+                if(id.startsWith('part1')) {
+                    const statusText = document.getElementById(`status-${id}`);
+                    statusText.style.opacity = "1";
+                    if(id === 'part1-3') {
+                        document.getElementById(`container-${id}`).classList.add('ring-yellow-400');
+                    }
+                }
+            } else {
+                bulb.classList.remove('on');
+                bulb.classList.add('off');
+                
+                const particles = document.getElementById(`particles-${id}`);
+                // Neutral molecules stay visible, ions fade down
+                if(particles && conducts) particles.style.opacity = "0.3"; 
+                
+                 // Extra UI for section 1
+                if(id.startsWith('part1')) {
+                    const statusText = document.getElementById(`status-${id}`);
+                    if(!isOn) statusText.style.opacity = "0"; // Hide status when off
+                    if(id === 'part1-3' && !isOn) {
+                        document.getElementById(`container-${id}`).classList.remove('ring-yellow-400');
+                    }
+                }
+            }
+        }
+
+        function toggleAnswer(elementId) {
+            const el = document.getElementById(elementId);
+            if (el.classList.contains('hidden')) {
+                el.classList.remove('hidden');
+                // Change button text if it's the conclusion
+                if(elementId === 'conclusion-content') {
+                     event.target.innerText = "Ẩn kết luận";
+                } else {
+                     event.target.innerText = "Ẩn đáp án";
+                }
+            } else {
+                el.classList.add('hidden');
+                if(elementId === 'conclusion-content') {
+                     event.target.innerText = "Hiển thị kết luận";
+                } else {
+                     event.target.innerText = "Xem đáp án";
+                }
+            }
+        }
+        
+        function revealCell(element, answer) {
+            if(element.classList.contains('hidden-ans')) {
+                element.classList.remove('hidden-ans');
+                element.classList.add('revealed-ans');
+                element.innerText = answer;
+            }
+        }
+    </script>
+</body>
+</html>
